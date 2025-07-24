@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>定時炸彈遊戲 (優化版)</title>
+    <title>定時炸彈遊戲 (完整版)</title>
     <style>
         /* --- 頁面整體樣式 --- */
         body {
@@ -91,53 +91,33 @@
             color: #d9534f;
             min-height: 50px;
         }
-
+        
         /* --- 玩家列表樣式 --- */
-        #player-list {
-            list-style-type: none; padding: 0; max-width: 400px; margin: 0 auto;
-        }
-        #player-list li {
-            background-color: #f9f9f9; padding: 8px; margin-bottom: 5px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center;
-        }
-        .remove-player-btn {
-            background-color: #d9534f; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; font-weight: bold; cursor: pointer; line-height: 25px; padding: 0;
-        }
+        #player-list { list-style-type: none; padding: 0; max-width: 400px; margin: 0 auto; }
+        #player-list li { background-color: #f9f9f9; padding: 8px; margin-bottom: 5px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center; }
+        .remove-player-btn { background-color: #d9534f; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; font-weight: bold; cursor: pointer; line-height: 25px; padding: 0; }
         
         /* --- 歷史紀錄列表樣式 --- */
-        #history-list {
-            list-style-type: decimal; padding-left: 30px; text-align: left; max-width: 300px; margin: 1em auto;
-        }
-        #history-list .count {
-            font-weight: bold; color: #d9534f; margin-left: 10px;
+        .history-header { display: flex; justify-content: center; align-items: center; }
+        #history-list { list-style-type: decimal; padding-left: 30px; text-align: left; max-width: 300px; margin: 1em auto; }
+        #history-list .count { font-weight: bold; color: #d9534f; margin-left: 10px; }
+
+        /* [新功能] 清除紀錄按鈕的樣式 */
+        #clear-history-btn {
+            background-color: #f44336;
+            font-size: 0.8em;
+            padding: 4px 8px;
+            margin-left: 15px;
         }
 
         /* --- 結束後顯示的內容樣式 --- */
-        #punishment-area {
-            background-color: #fffbe6; border: 2px solid #f0ad4e; border-radius: 10px; padding: 15px; margin-top: 20px; text-align: left; line-height: 1.8;
-        }
-        #punishment-area .player-name {
-            font-weight: bold; font-size: 1.5em; color: #d9534f; display: block; text-align: center; margin-bottom: 10px;
-        }
+        #punishment-area { background-color: #fffbe6; border: 2px solid #f0ad4e; border-radius: 10px; padding: 15px; margin-top: 20px; text-align: left; line-height: 1.8; }
+        #punishment-area .player-name { font-weight: bold; font-size: 1.5em; color: #d9534f; display: block; text-align: center; margin-bottom: 10px; }
 
-        /* [新功能 2] 讓管理名單按鈕變得低調 */
-        .footer-controls {
-            text-align: right;
-            margin-top: 20px;
-        }
-        #toggle-players-btn {
-            background: none;
-            border: none;
-            color: #888;
-            font-size: 0.9em;
-            text-decoration: underline;
-            padding: 5px;
-            cursor: pointer;
-        }
-        #toggle-players-btn:hover {
-            color: #000;
-            background: none;
-            transform: none;
-        }
+        /* --- 頁腳控制項 --- */
+        .footer-controls { text-align: right; margin-top: 20px; }
+        #toggle-players-btn { background: none; border: none; color: #888; font-size: 0.9em; text-decoration: underline; padding: 5px; cursor: pointer; }
+        #toggle-players-btn:hover { color: #000; background: none; transform: none; }
 
     </style>
 </head>
@@ -146,9 +126,12 @@
     <div class="game-container">
         <h1>💣 定時炸彈 💣</h1>
 
-        <!-- [新功能 1] 將排行榜移到最上面 -->
         <div id="history-area" class="area-section">
-            <h4>📜 被炸到的次數排行榜</h4>
+            <div class="history-header">
+                <h4>📜 被炸到的次數排行榜</h4>
+                <!-- [新功能] 清除紀錄按鈕 -->
+                <button id="clear-history-btn" title="清除所有紀錄">清除紀錄</button>
+            </div>
             <ul id="history-list"></ul>
         </div>
         
@@ -182,7 +165,6 @@
             <ul id="player-list"></ul>
         </div>
 
-        <!-- [新功能 2] 管理名單的觸發按鈕移到最下面 -->
         <div class="footer-controls">
              <button id="toggle-players-btn">管理名單</button>
         </div>
@@ -208,6 +190,8 @@
         const punishmentArea = document.getElementById('punishment-area');
         const togglePlayersBtn = document.getElementById('toggle-players-btn');
         const playerManagementArea = document.getElementById('player-management-area');
+        // [新功能] 抓取清除按鈕
+        const clearHistoryBtn = document.getElementById('clear-history-btn');
 
 
         // --- 遊戲變數 ---
@@ -260,7 +244,6 @@
             tickSound.pause();
             tickSound.currentTime = 0;
             explosionSound.play();
-            
             statusMessage.textContent = '💥 轟隆！爆炸了！ 💥';
             resultArea.classList.remove('hidden');
         }
@@ -280,7 +263,6 @@
             timeLeft = parseInt(timeInput.value, 10) || 60;
             timerDisplay.textContent = formatTime(timeLeft);
             timerDisplay.classList.remove('blinking-text');
-
             playAgainArea.classList.add('hidden');
             punishmentArea.classList.add('hidden');
             setupArea.classList.remove('hidden');
@@ -349,7 +331,6 @@
         function renderHistoryList() {
             historyList.innerHTML = '';
             const sortedRecords = Object.entries(historyRecords).sort(([, countA], [, countB]) => countB - countA);
-
             sortedRecords.forEach(([name, count]) => {
                 const li = document.createElement('li');
                 li.innerHTML = `${name} <span class="count">${count} 次</span>`;
@@ -359,18 +340,24 @@
         
         function recordNameAndShowPunishment() {
             const selectedPlayer = playerSelect.value;
-            if (!selectedPlayer) {
-                alert('請選擇一位玩家！');
-                return;
-            }
+            if (!selectedPlayer) { alert('請選擇一位玩家！'); return; }
             historyRecords[selectedPlayer] = (historyRecords[selectedPlayer] || 0) + 1;
-            
             saveHistoryToLocalStorage();
             renderHistoryList();
-            
             resultArea.classList.add('hidden');
             showPunishment(selectedPlayer);
             playAgainArea.classList.remove('hidden');
+        }
+
+        // [新功能] 清除紀錄的函式
+        function clearHistory() {
+            const isConfirmed = confirm('您確定要清除所有被炸到的次數紀錄嗎？這個動作無法復原！');
+            if (isConfirmed) {
+                historyRecords = {};
+                saveHistoryToLocalStorage();
+                renderHistoryList();
+                alert('所有紀錄已成功清除！');
+            }
         }
 
         function savePlayersToLocalStorage() {
@@ -383,14 +370,13 @@
 
         function loadFromLocalStorage() {
             const storedPlayers = localStorage.getItem('bombGamePlayers');
-            const storedHistory = localStorage.getItem('bombGameHistory');
-            
             if (storedPlayers) {
                 playerNames = JSON.parse(storedPlayers);
             } else {
                 playerNames = ['允恩', '允薆', '坤翰', '筠縢', '心恩', '芊妤'];
             }
             
+            const storedHistory = localStorage.getItem('bombGameHistory');
             if (storedHistory) {
                 historyRecords = JSON.parse(storedHistory) || {};
             }
@@ -413,15 +399,12 @@
             newPlayerInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') addPlayer();
             });
-
             togglePlayersBtn.addEventListener('click', () => {
                 playerManagementArea.classList.toggle('hidden');
-                if (playerManagementArea.classList.contains('hidden')) {
-                    togglePlayersBtn.textContent = '管理名單';
-                } else {
-                    togglePlayersBtn.textContent = '隱藏名單管理';
-                }
+                togglePlayersBtn.textContent = playerManagementArea.classList.contains('hidden') ? '管理名單' : '隱藏名單管理';
             });
+            // [新功能] 綁定清除紀錄按鈕的事件
+            clearHistoryBtn.addEventListener('click', clearHistory);
         };
     </script>
 </body>
