@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>定時炸彈遊戲 (最終版)</title>
+    <title>定時炸彈遊戲 (驚喜版)</title>
     <style>
         /* --- 頁面整體樣式 --- */
         body {
@@ -13,7 +13,7 @@
             padding: 1em;
         }
 
-        /* [新功能 1] 主要佈局：Flexbox */
+        /* --- 主要佈局：Flexbox --- */
         .main-layout {
             display: flex;
             gap: 2em;
@@ -55,18 +55,14 @@
             }
         }
 
-
         h1 { color: #d9534f; margin-top: 0; }
         h3, h4 { color: #5bc0de; }
 
         /* --- 計時器顯示 --- */
         #timer-display {
-            font-size: 5rem; font-weight: bold; color: #4CAF50; margin: 0.2em 0; letter-spacing: 5px; transition: color 0.5s;
+            font-size: 5rem; font-weight: bold; color: #4CAF50; margin: 0.2em 0; letter-spacing: 5px; transition: color 0.5s, visibility 0.2s;
         }
-
-        @keyframes blinking-text { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-        .blinking-text { color: #d9534f !important; animation: blinking-text 1s infinite; }
-
+        
         /* --- 按鈕和輸入框樣式 --- */
         input[type="number"], input[type="text"], select, button {
             padding: 10px; font-size: 1em; border: 2px solid #ccc; border-radius: 8px; margin: 5px; vertical-align: middle;
@@ -76,8 +72,6 @@
         button:disabled { background-color: #cccccc; cursor: not-allowed; transform: none; }
         #start-btn { background-color: #4CAF50; }
         #start-btn:hover:enabled { background-color: #45a049; }
-        
-        /* [新功能 3] 立即停止按鈕的樣式 */
         #stop-btn { background-color: #e74c3c; }
         #stop-btn:hover { background-color: #c0392b; }
 
@@ -97,7 +91,6 @@
         .history-header { display: flex; justify-content: space-between; align-items: center; }
         #history-list { list-style-type: decimal; padding-left: 20px; text-align: left; }
         #history-list .count { font-weight: bold; color: #d9534f; margin-left: 10px; }
-
         #clear-history-btn { background-color: #f44336; font-size: 0.8em; padding: 4px 8px; }
 
         /* --- 結束後顯示的內容樣式 --- */
@@ -109,7 +102,6 @@
         #show-players-btn { background: none; border: none; color: #888; font-size: 0.9em; text-decoration: underline; padding: 5px; cursor: pointer; }
         #show-players-btn:hover { color: #000; background: none; transform: none; }
 
-        /* [新功能 2] 管理面板的頭部 */
         .management-header { display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
@@ -127,7 +119,6 @@
                 <button id="start-btn">開始遊戲</button>
             </div>
             
-            <!-- [新功能 3] 立即停止按鈕 -->
             <div id="stop-btn-area" class="hidden">
                 <button id="stop-btn">立即停止</button>
             </div>
@@ -145,7 +136,6 @@
             </div>
             
             <div id="player-management-area" class="area-section hidden">
-                <!-- [新功能 2] 新的管理面板頭部 -->
                 <div class="management-header">
                     <h4>🎮 玩家管理</h4>
                     <button id="hide-players-btn">完成管理</button>
@@ -162,7 +152,6 @@
             </div>
         </div>
 
-        <!-- [新功能 1] 側邊欄 -->
         <div class="sidebar-column">
             <div class="history-header">
                 <h4>📜 次數排行榜</h4>
@@ -191,7 +180,6 @@
         const punishmentArea = document.getElementById('punishment-area');
         const playerManagementArea = document.getElementById('player-management-area');
         const clearHistoryBtn = document.getElementById('clear-history-btn');
-        // 新功能對應的元素
         const stopBtnArea = document.getElementById('stop-btn-area');
         const stopBtn = document.getElementById('stop-btn');
         const showPlayersBtn = document.getElementById('show-players-btn');
@@ -214,21 +202,20 @@
 
         function startGame() {
             setupArea.classList.add('hidden');
-            stopBtnArea.classList.remove('hidden'); // 顯示停止按鈕
+            stopBtnArea.classList.remove('hidden');
             playAgainArea.classList.add('hidden');
             resultArea.classList.add('hidden');
             punishmentArea.classList.add('hidden');
             statusMessage.textContent = '';
             
+            // [新功能] 隱藏計時器，增加刺激感
+            timerDisplay.style.visibility = 'hidden';
+            
             timeLeft = parseInt(timeInput.value, 10) || 60;
-            timerDisplay.classList.remove('blinking-text');
-            timerDisplay.textContent = formatTime(timeLeft);
             tickSound.play();
 
             timer = setInterval(() => {
                 timeLeft--;
-                timerDisplay.textContent = formatTime(timeLeft);
-                if (timeLeft <= 10) timerDisplay.classList.add('blinking-text');
                 if (timeLeft <= 0) endGame();
             }, 1000);
         }
@@ -239,7 +226,12 @@
             explosionSound.play();
             statusMessage.textContent = '💥 轟隆！爆炸了！ 💥';
             resultArea.classList.remove('hidden');
-            stopBtnArea.classList.add('hidden'); // 隱藏停止按鈕
+            stopBtnArea.classList.add('hidden');
+            
+            // [新功能] 時間到，重新顯示計時器 (會是 00:00)
+            timerDisplay.textContent = formatTime(0);
+            timerDisplay.style.visibility = 'visible';
+            timerDisplay.style.color = '#d9534f'; // 顯示為紅色
         }
 
         function showPunishment(playerName) {
@@ -252,17 +244,20 @@
             punishmentArea.classList.remove('hidden');
         }
 
-        // 通用的重置/取消函式
         function resetGame(message = '') {
             clearInterval(timer);
             tickSound.pause(); tickSound.currentTime = 0;
             statusMessage.textContent = message;
             timeLeft = parseInt(timeInput.value, 10) || 60;
+            
+            // [新功能] 重置時，確保計時器是可見的
             timerDisplay.textContent = formatTime(timeLeft);
-            timerDisplay.classList.remove('blinking-text');
+            timerDisplay.style.visibility = 'visible';
+            timerDisplay.style.color = '#4CAF50'; // 恢復正常顏色
+
             playAgainArea.classList.add('hidden');
             punishmentArea.classList.add('hidden');
-            stopBtnArea.classList.add('hidden'); // 確保停止按鈕被隱藏
+            stopBtnArea.classList.add('hidden');
             setupArea.classList.remove('hidden');
             resultArea.classList.add('hidden');
         }
@@ -377,7 +372,6 @@
             addPlayerBtn.addEventListener('click', addPlayer);
             newPlayerInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addPlayer(); });
             clearHistoryBtn.addEventListener('click', clearHistory);
-            // 新功能事件綁定
             stopBtn.addEventListener('click', () => resetGame('遊戲已手動停止。'));
             showPlayersBtn.addEventListener('click', () => playerManagementArea.classList.remove('hidden'));
             hidePlayersBtn.addEventListener('click', () => playerManagementArea.classList.add('hidden'));
