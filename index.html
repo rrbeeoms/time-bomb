@@ -3,94 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>定時炸彈遊戲 (完整版)</title>
+    <title>定時炸彈遊戲 (最終版)</title>
     <style>
         /* --- 頁面整體樣式 --- */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f0f8ff;
             color: #333;
-            text-align: center;
             padding: 1em;
         }
 
-        /* --- 遊戲主容器 --- */
-        .game-container {
+        /* [新功能 1] 主要佈局：Flexbox */
+        .main-layout {
+            display: flex;
+            gap: 2em;
+            max-width: 1000px;
+            margin: 0 auto;
+            align-items: flex-start;
+        }
+
+        .game-column {
+            flex: 3; /* 遊戲區佔較大空間 */
             background-color: #ffffff;
             padding: 2em;
             border-radius: 15px;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            max-width: 600px;
-            margin: 1em auto;
+            text-align: center;
+        }
+        
+        .sidebar-column {
+            flex: 2; /* 側邊欄佔較小空間 */
+            background-color: #f9f9f9;
+            padding: 1.5em;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            position: sticky; /* 讓側邊欄在滾動時固定 */
+            top: 20px;
         }
 
-        h1 { color: #d9534f; }
+        /* 響應式設計：在窄螢幕上將側邊欄移到上方 */
+        @media (max-width: 800px) {
+            .main-layout {
+                flex-direction: column;
+            }
+            .sidebar-column {
+                width: 100%;
+                box-sizing: border-box;
+                position: static;
+                order: -1; /* 將側邊欄顯示在最上面 */
+                margin-bottom: 2em;
+            }
+        }
+
+
+        h1 { color: #d9534f; margin-top: 0; }
         h3, h4 { color: #5bc0de; }
 
         /* --- 計時器顯示 --- */
         #timer-display {
-            font-size: 5rem;
-            font-weight: bold;
-            color: #4CAF50;
-            margin: 0.2em 0;
-            letter-spacing: 5px;
-            transition: color 0.5s;
+            font-size: 5rem; font-weight: bold; color: #4CAF50; margin: 0.2em 0; letter-spacing: 5px; transition: color 0.5s;
         }
 
-        @keyframes blinking-text {
-            0% { opacity: 1; }
-            50% { opacity: 0.3; }
-            100% { opacity: 1; }
-        }
-        .blinking-text {
-            color: #d9534f !important;
-            animation: blinking-text 1s infinite;
-        }
+        @keyframes blinking-text { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        .blinking-text { color: #d9534f !important; animation: blinking-text 1s infinite; }
 
         /* --- 按鈕和輸入框樣式 --- */
         input[type="number"], input[type="text"], select, button {
-            padding: 10px;
-            font-size: 1em;
-            border: 2px solid #ccc;
-            border-radius: 8px;
-            margin: 5px;
-            vertical-align: middle;
+            padding: 10px; font-size: 1em; border: 2px solid #ccc; border-radius: 8px; margin: 5px; vertical-align: middle;
         }
-        button {
-            background-color: #5bc0de;
-            color: white;
-            border: none;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.2s;
-        }
-        button:hover {
-            background-color: #31b0d5;
-            transform: scale(1.05);
-        }
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-            transform: none;
-        }
+        button { background-color: #5bc0de; color: white; border: none; cursor: pointer; transition: background-color 0.3s, transform 0.2s; }
+        button:hover { background-color: #31b0d5; transform: scale(1.05); }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; transform: none; }
         #start-btn { background-color: #4CAF50; }
         #start-btn:hover:enabled { background-color: #45a049; }
+        
+        /* [新功能 3] 立即停止按鈕的樣式 */
+        #stop-btn { background-color: #e74c3c; }
+        #stop-btn:hover { background-color: #c0392b; }
 
         /* --- 區域劃分 --- */
-        .area-section {
-            margin: 1.5em 0;
-            padding: 1em 0;
-            border-top: 1px solid #eee;
-        }
+        .area-section { margin: 1.5em 0; padding: 1em 0; border-top: 1px solid #eee; }
         .hidden { display: none; }
 
         /* --- 狀態訊息 --- */
-        #status-message {
-            font-size: 2em;
-            font-weight: bold;
-            color: #d9534f;
-            min-height: 50px;
-        }
+        #status-message { font-size: 1.5em; font-weight: bold; color: #d9534f; min-height: 40px; }
         
         /* --- 玩家列表樣式 --- */
         #player-list { list-style-type: none; padding: 0; max-width: 400px; margin: 0 auto; }
@@ -98,17 +94,11 @@
         .remove-player-btn { background-color: #d9534f; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; font-weight: bold; cursor: pointer; line-height: 25px; padding: 0; }
         
         /* --- 歷史紀錄列表樣式 --- */
-        .history-header { display: flex; justify-content: center; align-items: center; }
-        #history-list { list-style-type: decimal; padding-left: 30px; text-align: left; max-width: 300px; margin: 1em auto; }
+        .history-header { display: flex; justify-content: space-between; align-items: center; }
+        #history-list { list-style-type: decimal; padding-left: 20px; text-align: left; }
         #history-list .count { font-weight: bold; color: #d9534f; margin-left: 10px; }
 
-        /* [新功能] 清除紀錄按鈕的樣式 */
-        #clear-history-btn {
-            background-color: #f44336;
-            font-size: 0.8em;
-            padding: 4px 8px;
-            margin-left: 15px;
-        }
+        #clear-history-btn { background-color: #f44336; font-size: 0.8em; padding: 4px 8px; }
 
         /* --- 結束後顯示的內容樣式 --- */
         #punishment-area { background-color: #fffbe6; border: 2px solid #f0ad4e; border-radius: 10px; padding: 15px; margin-top: 20px; text-align: left; line-height: 1.8; }
@@ -116,59 +106,70 @@
 
         /* --- 頁腳控制項 --- */
         .footer-controls { text-align: right; margin-top: 20px; }
-        #toggle-players-btn { background: none; border: none; color: #888; font-size: 0.9em; text-decoration: underline; padding: 5px; cursor: pointer; }
-        #toggle-players-btn:hover { color: #000; background: none; transform: none; }
+        #show-players-btn { background: none; border: none; color: #888; font-size: 0.9em; text-decoration: underline; padding: 5px; cursor: pointer; }
+        #show-players-btn:hover { color: #000; background: none; transform: none; }
 
+        /* [新功能 2] 管理面板的頭部 */
+        .management-header { display: flex; justify-content: space-between; align-items: center; }
     </style>
 </head>
 <body>
+    <div class="main-layout">
+        <div class="game-column">
+            <h1>💣 定時炸彈 💣</h1>
+            
+            <div id="timer-display">01:00</div>
+            <div id="status-message"></div>
 
-    <div class="game-container">
-        <h1>💣 定時炸彈 💣</h1>
+            <div id="setup-area" class="area-section">
+                <label for="time-input">遊戲時間 (秒):</label>
+                <input type="number" id="time-input" value="60" min="5">
+                <button id="start-btn">開始遊戲</button>
+            </div>
+            
+            <!-- [新功能 3] 立即停止按鈕 -->
+            <div id="stop-btn-area" class="hidden">
+                <button id="stop-btn">立即停止</button>
+            </div>
+            
+            <div id="result-area" class="area-section hidden">
+                <h3>是誰拿到了炸彈？</h3>
+                <select id="player-select"></select>
+                <button id="submit-name-btn">記錄姓名</button>
+            </div>
 
-        <div id="history-area" class="area-section">
+            <div id="punishment-area" class="area-section hidden"></div>
+
+            <div id="play-again-area" class="hidden">
+                 <button id="play-again-btn">再玩一輪！</button>
+            </div>
+            
+            <div id="player-management-area" class="area-section hidden">
+                <!-- [新功能 2] 新的管理面板頭部 -->
+                <div class="management-header">
+                    <h4>🎮 玩家管理</h4>
+                    <button id="hide-players-btn">完成管理</button>
+                </div>
+                <div>
+                    <input type="text" id="new-player-input" placeholder="輸入新玩家姓名">
+                    <button id="add-player-btn">新增玩家</button>
+                </div>
+                <ul id="player-list"></ul>
+            </div>
+
+            <div class="footer-controls">
+                 <button id="show-players-btn">管理名單</button>
+            </div>
+        </div>
+
+        <!-- [新功能 1] 側邊欄 -->
+        <div class="sidebar-column">
             <div class="history-header">
-                <h4>📜 被炸到的次數排行榜</h4>
-                <!-- [新功能] 清除紀錄按鈕 -->
+                <h4>📜 次數排行榜</h4>
                 <button id="clear-history-btn" title="清除所有紀錄">清除紀錄</button>
             </div>
             <ul id="history-list"></ul>
         </div>
-        
-        <div id="timer-display">01:00</div>
-        <div id="status-message"></div>
-
-        <div id="setup-area" class="area-section">
-            <label for="time-input">遊戲時間 (秒):</label>
-            <input type="number" id="time-input" value="60" min="5">
-            <button id="start-btn">開始遊戲</button>
-        </div>
-        
-        <div id="result-area" class="area-section hidden">
-            <h3>是誰拿到了炸彈？</h3>
-            <select id="player-select"></select>
-            <button id="submit-name-btn">記錄姓名</button>
-        </div>
-
-        <div id="punishment-area" class="area-section hidden"></div>
-
-        <div id="play-again-area" class="hidden">
-             <button id="play-again-btn">再玩一輪！</button>
-        </div>
-        
-        <div id="player-management-area" class="area-section hidden">
-            <h4>🎮 玩家管理</h4>
-            <div>
-                <input type="text" id="new-player-input" placeholder="輸入新玩家姓名">
-                <button id="add-player-btn">新增玩家</button>
-            </div>
-            <ul id="player-list"></ul>
-        </div>
-
-        <div class="footer-controls">
-             <button id="toggle-players-btn">管理名單</button>
-        </div>
-
     </div>
 
     <script>
@@ -188,11 +189,13 @@
         const resultArea = document.getElementById('result-area');
         const playAgainArea = document.getElementById('play-again-area');
         const punishmentArea = document.getElementById('punishment-area');
-        const togglePlayersBtn = document.getElementById('toggle-players-btn');
         const playerManagementArea = document.getElementById('player-management-area');
-        // [新功能] 抓取清除按鈕
         const clearHistoryBtn = document.getElementById('clear-history-btn');
-
+        // 新功能對應的元素
+        const stopBtnArea = document.getElementById('stop-btn-area');
+        const stopBtn = document.getElementById('stop-btn');
+        const showPlayersBtn = document.getElementById('show-players-btn');
+        const hidePlayersBtn = document.getElementById('hide-players-btn');
 
         // --- 遊戲變數 ---
         let timer;
@@ -204,48 +207,39 @@
         const explosionSound = new Audio('https://www.soundjay.com/mechanical/sounds/explosion-01.mp3');
 
         // --- 功能函式 ---
-
         function formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
-            const remainingSeconds = seconds % 60;
-            return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+            return `${String(minutes).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
         }
 
         function startGame() {
             setupArea.classList.add('hidden');
+            stopBtnArea.classList.remove('hidden'); // 顯示停止按鈕
             playAgainArea.classList.add('hidden');
             resultArea.classList.add('hidden');
             punishmentArea.classList.add('hidden');
             statusMessage.textContent = '';
             
             timeLeft = parseInt(timeInput.value, 10) || 60;
-            
             timerDisplay.classList.remove('blinking-text');
             timerDisplay.textContent = formatTime(timeLeft);
-            
             tickSound.play();
 
             timer = setInterval(() => {
                 timeLeft--;
                 timerDisplay.textContent = formatTime(timeLeft);
-
-                if (timeLeft <= 10) {
-                    timerDisplay.classList.add('blinking-text');
-                }
-
-                if (timeLeft <= 0) {
-                    endGame();
-                }
+                if (timeLeft <= 10) timerDisplay.classList.add('blinking-text');
+                if (timeLeft <= 0) endGame();
             }, 1000);
         }
         
         function endGame() {
             clearInterval(timer);
-            tickSound.pause();
-            tickSound.currentTime = 0;
+            tickSound.pause(); tickSound.currentTime = 0;
             explosionSound.play();
             statusMessage.textContent = '💥 轟隆！爆炸了！ 💥';
             resultArea.classList.remove('hidden');
+            stopBtnArea.classList.add('hidden'); // 隱藏停止按鈕
         }
 
         function showPunishment(playerName) {
@@ -258,14 +252,19 @@
             punishmentArea.classList.remove('hidden');
         }
 
-        function resetGame() {
-            statusMessage.textContent = '';
+        // 通用的重置/取消函式
+        function resetGame(message = '') {
+            clearInterval(timer);
+            tickSound.pause(); tickSound.currentTime = 0;
+            statusMessage.textContent = message;
             timeLeft = parseInt(timeInput.value, 10) || 60;
             timerDisplay.textContent = formatTime(timeLeft);
             timerDisplay.classList.remove('blinking-text');
             playAgainArea.classList.add('hidden');
             punishmentArea.classList.add('hidden');
+            stopBtnArea.classList.add('hidden'); // 確保停止按鈕被隱藏
             setupArea.classList.remove('hidden');
+            resultArea.classList.add('hidden');
         }
 
         // --- 玩家管理 ---
@@ -292,9 +291,7 @@
                 playerNames.push(newName);
                 newPlayerInput.value = '';
                 renderPlayerList();
-            } else if (playerNames.includes(newName)) {
-                alert('這個名字已經存在了！');
-            }
+            } else if (playerNames.includes(newName)) alert('這個名字已經存在了！');
         }
 
         function removePlayer(index) {
@@ -312,8 +309,7 @@
             playerSelect.innerHTML = '';
             playerNames.forEach(name => {
                 const option = document.createElement('option');
-                option.value = name;
-                option.textContent = name;
+                option.value = name; option.textContent = name;
                 playerSelect.appendChild(option);
             });
         }
@@ -321,8 +317,8 @@
         function updateStartButtonState() {
             startBtn.disabled = playerNames.length === 0;
             if (startBtn.disabled) {
-                statusMessage.textContent = '請先新增玩家才能開始遊戲！';
-            } else if (statusMessage.textContent === '請先新增玩家才能開始遊戲！') {
+                statusMessage.textContent = '請新增玩家才能開始遊戲！';
+            } else if (statusMessage.textContent === '請新增玩家才能開始遊戲！') {
                 statusMessage.textContent = '';
             }
         }
@@ -349,10 +345,8 @@
             playAgainArea.classList.remove('hidden');
         }
 
-        // [新功能] 清除紀錄的函式
         function clearHistory() {
-            const isConfirmed = confirm('您確定要清除所有被炸到的次數紀錄嗎？這個動作無法復原！');
-            if (isConfirmed) {
+            if (confirm('您確定要清除所有被炸到的次數紀錄嗎？這個動作無法復原！')) {
                 historyRecords = {};
                 saveHistoryToLocalStorage();
                 renderHistoryList();
@@ -360,51 +354,33 @@
             }
         }
 
-        function savePlayersToLocalStorage() {
-            localStorage.setItem('bombGamePlayers', JSON.stringify(playerNames));
-        }
-
-        function saveHistoryToLocalStorage() {
-            localStorage.setItem('bombGameHistory', JSON.stringify(historyRecords));
-        }
+        function savePlayersToLocalStorage() { localStorage.setItem('bombGamePlayers', JSON.stringify(playerNames)); }
+        function saveHistoryToLocalStorage() { localStorage.setItem('bombGameHistory', JSON.stringify(historyRecords)); }
 
         function loadFromLocalStorage() {
             const storedPlayers = localStorage.getItem('bombGamePlayers');
-            if (storedPlayers) {
-                playerNames = JSON.parse(storedPlayers);
-            } else {
-                playerNames = ['允恩', '允薆', '坤翰', '筠縢', '心恩', '芊妤'];
-            }
-            
+            playerNames = storedPlayers ? JSON.parse(storedPlayers) : ['允恩', '允薆', '坤翰', '筠縢', '心恩', '芊妤'];
             const storedHistory = localStorage.getItem('bombGameHistory');
-            if (storedHistory) {
-                historyRecords = JSON.parse(storedHistory) || {};
-            }
+            historyRecords = storedHistory ? JSON.parse(storedHistory) : {};
         }
 
-        // --- 頁面初始化 ---
+        // --- 頁面初始化與事件綁定 ---
         window.onload = () => {
             loadFromLocalStorage();
             renderPlayerList();
             renderHistoryList();
-            
-            const initialTime = parseInt(timeInput.value, 10);
-            timerDisplay.textContent = formatTime(initialTime);
+            resetGame();
 
-            // --- 事件綁定 ---
             startBtn.addEventListener('click', startGame);
             submitNameBtn.addEventListener('click', recordNameAndShowPunishment);
-            playAgainBtn.addEventListener('click', resetGame);
+            playAgainBtn.addEventListener('click', () => resetGame());
             addPlayerBtn.addEventListener('click', addPlayer);
-            newPlayerInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') addPlayer();
-            });
-            togglePlayersBtn.addEventListener('click', () => {
-                playerManagementArea.classList.toggle('hidden');
-                togglePlayersBtn.textContent = playerManagementArea.classList.contains('hidden') ? '管理名單' : '隱藏名單管理';
-            });
-            // [新功能] 綁定清除紀錄按鈕的事件
+            newPlayerInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addPlayer(); });
             clearHistoryBtn.addEventListener('click', clearHistory);
+            // 新功能事件綁定
+            stopBtn.addEventListener('click', () => resetGame('遊戲已手動停止。'));
+            showPlayersBtn.addEventListener('click', () => playerManagementArea.classList.remove('hidden'));
+            hidePlayersBtn.addEventListener('click', () => playerManagementArea.classList.add('hidden'));
         };
     </script>
 </body>
