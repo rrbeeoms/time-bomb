@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>定時炸彈遊戲 (升級版)</title>
+    <title>定時炸彈遊戲 (計次版)</title>
     <style>
         /* --- 頁面整體樣式 --- */
         body {
@@ -38,14 +38,13 @@
             transition: color 0.5s;
         }
 
-        /* 1. 視覺效果：新增閃爍動畫 */
         @keyframes blinking-text {
             0% { opacity: 1; }
             50% { opacity: 0.3; }
             100% { opacity: 1; }
         }
         .blinking-text {
-            color: #d9534f !important; /* 強制使用紅色 */
+            color: #d9534f !important;
             animation: blinking-text 1s infinite;
         }
 
@@ -93,7 +92,7 @@
             min-height: 50px;
         }
 
-        /* 2. 自訂玩家名單樣式 */
+        /* --- 玩家列表樣式 --- */
         #player-list {
             list-style-type: none;
             padding: 0;
@@ -122,16 +121,22 @@
             padding: 0;
         }
         
-        /* 3. 歷史紀錄列表樣式 */
+        /* --- 歷史紀錄列表樣式 --- */
         #history-list {
-            list-style-type: decimal; /* 使用數字編號 */
+            list-style-type: decimal;
             padding-left: 30px;
             text-align: left;
             max-width: 300px;
             margin: 1em auto;
         }
+        /* [新功能 2] 為次數計數增加粗體和顏色 */
+        #history-list .count {
+            font-weight: bold;
+            color: #d9534f;
+            margin-left: 10px;
+        }
 
-        /* 4. 結束後顯示的內容樣式 */
+        /* --- 結束後顯示的內容樣式 --- */
         #punishment-area {
             background-color: #fffbe6;
             border: 2px solid #f0ad4e;
@@ -149,13 +154,12 @@
             text-align: center;
             margin-bottom: 10px;
         }
-
     </style>
 </head>
 <body>
 
     <div class="game-container">
-        <h1>💣 定時炸彈 (升級版) 💣</h1>
+        <h1>💣 定時炸彈 (計次版) 💣</h1>
         
         <div id="timer-display">01:00</div>
         <div id="status-message"></div>
@@ -172,16 +176,19 @@
             <button id="submit-name-btn">記錄姓名</button>
         </div>
 
-        <div id="punishment-area" class="area-section hidden">
-             <!-- 內容將由 JS 動態填入 -->
-        </div>
+        <div id="punishment-area" class="area-section hidden"></div>
 
         <div id="play-again-area" class="hidden">
              <button id="play-again-btn">再玩一輪！</button>
         </div>
         
-        <!-- 2. 自訂玩家名單 -->
-        <div id="player-management-area" class="area-section">
+        <!-- [新功能 1] 管理名單的觸發按鈕 -->
+        <div class="area-section">
+             <button id="toggle-players-btn">管理名單</button>
+        </div>
+        
+        <!-- [新功能 1] 玩家管理區塊預設隱藏 -->
+        <div id="player-management-area" class="area-section hidden">
             <h4>🎮 玩家管理</h4>
             <div>
                 <input type="text" id="new-player-input" placeholder="輸入新玩家姓名">
@@ -190,9 +197,8 @@
             <ul id="player-list"></ul>
         </div>
 
-        <!-- 3. 儲存紀錄 -->
         <div id="history-area" class="area-section">
-            <h4>📜 被炸到的名單</h4>
+            <h4>📜 被炸到的次數排行榜</h4>
             <ul id="history-list"></ul>
         </div>
     </div>
@@ -214,12 +220,17 @@
         const resultArea = document.getElementById('result-area');
         const playAgainArea = document.getElementById('play-again-area');
         const punishmentArea = document.getElementById('punishment-area');
+        // [新功能 1] 抓取新按鈕和管理區塊
+        const togglePlayersBtn = document.getElementById('toggle-players-btn');
+        const playerManagementArea = document.getElementById('player-management-area');
+
 
         // --- 遊戲變數 ---
         let timer;
         let timeLeft = 0;
         let playerNames = [];
-        let historyRecords = [];
+        // [新功能 2] 歷史紀錄改為物件以儲存次數
+        let historyRecords = {}; // 例如: { '允恩': 2, '坤翰': 1 }
         const tickSound = new Audio('https://www.soundjay.com/clock/sounds/clock-ticking-1.mp3');
         tickSound.loop = true;
         const explosionSound = new Audio('https://www.soundjay.com/mechanical/sounds/explosion-01.mp3');
@@ -241,7 +252,6 @@
             
             timeLeft = parseInt(timeInput.value, 10) || 60;
             
-            // 重置計時器樣式
             timerDisplay.classList.remove('blinking-text');
             timerDisplay.textContent = formatTime(timeLeft);
             
@@ -251,7 +261,6 @@
                 timeLeft--;
                 timerDisplay.textContent = formatTime(timeLeft);
 
-                // 1. 視覺效果：最後10秒閃爍
                 if (timeLeft <= 10) {
                     timerDisplay.classList.add('blinking-text');
                 }
@@ -272,7 +281,6 @@
             resultArea.classList.remove('hidden');
         }
 
-        // 4. 顯示懲罰內容
         function showPunishment(playerName) {
             punishmentArea.innerHTML = `
                 <span class="player-name">${playerName}，請唸出來：</span>
@@ -294,7 +302,7 @@
             setupArea.classList.remove('hidden');
         }
 
-        // --- 2. 玩家管理函式 ---
+        // --- 玩家管理 ---
         function renderPlayerList() {
             playerList.innerHTML = '';
             playerNames.forEach((name, index) => {
@@ -324,7 +332,14 @@
         }
 
         function removePlayer(index) {
+            const removedPlayer = playerNames[index];
             playerNames.splice(index, 1);
+            // 當從名單移除玩家時，也從計數歷史中移除，避免資料不一致
+            if (historyRecords[removedPlayer]) {
+                delete historyRecords[removedPlayer];
+                saveHistoryToLocalStorage();
+                renderHistoryList();
+            }
             renderPlayerList();
         }
 
@@ -342,23 +357,29 @@
             startBtn.disabled = playerNames.length === 0;
             if (startBtn.disabled) {
                 statusMessage.textContent = '請先新增玩家才能開始遊戲！';
-            } else {
-                 if (statusMessage.textContent === '請先新增玩家才能開始遊戲！') {
-                    statusMessage.textContent = '';
-                 }
+            } else if (statusMessage.textContent === '請先新增玩家才能開始遊戲！') {
+                statusMessage.textContent = '';
             }
         }
 
-        // --- 3. 歷史紀錄與 LocalStorage ---
+        // --- 歷史紀錄與 LocalStorage ---
+        
+        // [新功能 2] 更新渲染歷史紀錄的函式
         function renderHistoryList() {
             historyList.innerHTML = '';
-            historyRecords.forEach(record => {
+
+            // 將物件轉換為陣列並排序
+            const sortedRecords = Object.entries(historyRecords).sort(([, countA], [, countB]) => countB - countA);
+
+            sortedRecords.forEach(([name, count]) => {
                 const li = document.createElement('li');
-                li.textContent = record;
+                // 使用 innerHTML 以便加入帶有 class 的 span
+                li.innerHTML = `${name} <span class="count">${count} 次</span>`;
                 historyList.appendChild(li);
             });
         }
-
+        
+        // [新功能 2] 更新記錄姓名的函式
         function recordNameAndShowPunishment() {
             const selectedPlayer = playerSelect.value;
             if (!selectedPlayer) {
@@ -366,12 +387,14 @@
                 return;
             }
             
-            historyRecords.push(selectedPlayer);
+            // 如果玩家已在紀錄中，次數+1，否則設為1
+            historyRecords[selectedPlayer] = (historyRecords[selectedPlayer] || 0) + 1;
+            
             saveHistoryToLocalStorage();
             renderHistoryList();
             
             resultArea.classList.add('hidden');
-            showPunishment(selectedPlayer); // 顯示懲罰內容
+            showPunishment(selectedPlayer);
             playAgainArea.classList.remove('hidden');
         }
 
@@ -390,12 +413,12 @@
             if (storedPlayers) {
                 playerNames = JSON.parse(storedPlayers);
             } else {
-                // 如果是第一次玩，給一些預設名字
                 playerNames = ['允恩', '允薆', '坤翰', '筠縢', '心恩', '芊妤'];
             }
             
             if (storedHistory) {
-                historyRecords = JSON.parse(storedHistory);
+                // [新功能 2] 確保載入的是物件
+                historyRecords = JSON.parse(storedHistory) || {};
             }
         }
 
@@ -414,8 +437,16 @@
             playAgainBtn.addEventListener('click', resetGame);
             addPlayerBtn.addEventListener('click', addPlayer);
             newPlayerInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    addPlayer();
+                if (e.key === 'Enter') addPlayer();
+            });
+
+            // [新功能 1] 綁定管理名單按鈕的點擊事件
+            togglePlayersBtn.addEventListener('click', () => {
+                playerManagementArea.classList.toggle('hidden');
+                if (playerManagementArea.classList.contains('hidden')) {
+                    togglePlayersBtn.textContent = '管理名單';
+                } else {
+                    togglePlayersBtn.textContent = '完成管理';
                 }
             });
         };
