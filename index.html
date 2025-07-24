@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>定時炸彈遊戲 (計次版)</title>
+    <title>定時炸彈遊戲 (優化版)</title>
     <style>
         /* --- 頁面整體樣式 --- */
         body {
@@ -79,7 +79,7 @@
         /* --- 區域劃分 --- */
         .area-section {
             margin: 1.5em 0;
-            padding: 1em;
+            padding: 1em 0;
             border-top: 1px solid #eee;
         }
         .hidden { display: none; }
@@ -94,72 +94,63 @@
 
         /* --- 玩家列表樣式 --- */
         #player-list {
-            list-style-type: none;
-            padding: 0;
-            max-width: 400px;
-            margin: 0 auto;
+            list-style-type: none; padding: 0; max-width: 400px; margin: 0 auto;
         }
         #player-list li {
-            background-color: #f9f9f9;
-            padding: 8px;
-            margin-bottom: 5px;
-            border-radius: 5px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            background-color: #f9f9f9; padding: 8px; margin-bottom: 5px; border-radius: 5px; display: flex; justify-content: space-between; align-items: center;
         }
         .remove-player-btn {
-            background-color: #d9534f;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 25px;
-            height: 25px;
-            font-weight: bold;
-            cursor: pointer;
-            line-height: 25px;
-            padding: 0;
+            background-color: #d9534f; color: white; border: none; border-radius: 50%; width: 25px; height: 25px; font-weight: bold; cursor: pointer; line-height: 25px; padding: 0;
         }
         
         /* --- 歷史紀錄列表樣式 --- */
         #history-list {
-            list-style-type: decimal;
-            padding-left: 30px;
-            text-align: left;
-            max-width: 300px;
-            margin: 1em auto;
+            list-style-type: decimal; padding-left: 30px; text-align: left; max-width: 300px; margin: 1em auto;
         }
-        /* [新功能 2] 為次數計數增加粗體和顏色 */
         #history-list .count {
-            font-weight: bold;
-            color: #d9534f;
-            margin-left: 10px;
+            font-weight: bold; color: #d9534f; margin-left: 10px;
         }
 
         /* --- 結束後顯示的內容樣式 --- */
         #punishment-area {
-            background-color: #fffbe6;
-            border: 2px solid #f0ad4e;
-            border-radius: 10px;
-            padding: 15px;
-            margin-top: 20px;
-            text-align: left;
-            line-height: 1.8;
+            background-color: #fffbe6; border: 2px solid #f0ad4e; border-radius: 10px; padding: 15px; margin-top: 20px; text-align: left; line-height: 1.8;
         }
         #punishment-area .player-name {
-            font-weight: bold;
-            font-size: 1.5em;
-            color: #d9534f;
-            display: block;
-            text-align: center;
-            margin-bottom: 10px;
+            font-weight: bold; font-size: 1.5em; color: #d9534f; display: block; text-align: center; margin-bottom: 10px;
         }
+
+        /* [新功能 2] 讓管理名單按鈕變得低調 */
+        .footer-controls {
+            text-align: right;
+            margin-top: 20px;
+        }
+        #toggle-players-btn {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 0.9em;
+            text-decoration: underline;
+            padding: 5px;
+            cursor: pointer;
+        }
+        #toggle-players-btn:hover {
+            color: #000;
+            background: none;
+            transform: none;
+        }
+
     </style>
 </head>
 <body>
 
     <div class="game-container">
-        <h1>💣 定時炸彈 (計次版) 💣</h1>
+        <h1>💣 定時炸彈 💣</h1>
+
+        <!-- [新功能 1] 將排行榜移到最上面 -->
+        <div id="history-area" class="area-section">
+            <h4>📜 被炸到的次數排行榜</h4>
+            <ul id="history-list"></ul>
+        </div>
         
         <div id="timer-display">01:00</div>
         <div id="status-message"></div>
@@ -182,12 +173,6 @@
              <button id="play-again-btn">再玩一輪！</button>
         </div>
         
-        <!-- [新功能 1] 管理名單的觸發按鈕 -->
-        <div class="area-section">
-             <button id="toggle-players-btn">管理名單</button>
-        </div>
-        
-        <!-- [新功能 1] 玩家管理區塊預設隱藏 -->
         <div id="player-management-area" class="area-section hidden">
             <h4>🎮 玩家管理</h4>
             <div>
@@ -197,10 +182,11 @@
             <ul id="player-list"></ul>
         </div>
 
-        <div id="history-area" class="area-section">
-            <h4>📜 被炸到的次數排行榜</h4>
-            <ul id="history-list"></ul>
+        <!-- [新功能 2] 管理名單的觸發按鈕移到最下面 -->
+        <div class="footer-controls">
+             <button id="toggle-players-btn">管理名單</button>
         </div>
+
     </div>
 
     <script>
@@ -220,7 +206,6 @@
         const resultArea = document.getElementById('result-area');
         const playAgainArea = document.getElementById('play-again-area');
         const punishmentArea = document.getElementById('punishment-area');
-        // [新功能 1] 抓取新按鈕和管理區塊
         const togglePlayersBtn = document.getElementById('toggle-players-btn');
         const playerManagementArea = document.getElementById('player-management-area');
 
@@ -229,8 +214,7 @@
         let timer;
         let timeLeft = 0;
         let playerNames = [];
-        // [新功能 2] 歷史紀錄改為物件以儲存次數
-        let historyRecords = {}; // 例如: { '允恩': 2, '坤翰': 1 }
+        let historyRecords = {}; 
         const tickSound = new Audio('https://www.soundjay.com/clock/sounds/clock-ticking-1.mp3');
         tickSound.loop = true;
         const explosionSound = new Audio('https://www.soundjay.com/mechanical/sounds/explosion-01.mp3');
@@ -334,7 +318,6 @@
         function removePlayer(index) {
             const removedPlayer = playerNames[index];
             playerNames.splice(index, 1);
-            // 當從名單移除玩家時，也從計數歷史中移除，避免資料不一致
             if (historyRecords[removedPlayer]) {
                 delete historyRecords[removedPlayer];
                 saveHistoryToLocalStorage();
@@ -363,31 +346,23 @@
         }
 
         // --- 歷史紀錄與 LocalStorage ---
-        
-        // [新功能 2] 更新渲染歷史紀錄的函式
         function renderHistoryList() {
             historyList.innerHTML = '';
-
-            // 將物件轉換為陣列並排序
             const sortedRecords = Object.entries(historyRecords).sort(([, countA], [, countB]) => countB - countA);
 
             sortedRecords.forEach(([name, count]) => {
                 const li = document.createElement('li');
-                // 使用 innerHTML 以便加入帶有 class 的 span
                 li.innerHTML = `${name} <span class="count">${count} 次</span>`;
                 historyList.appendChild(li);
             });
         }
         
-        // [新功能 2] 更新記錄姓名的函式
         function recordNameAndShowPunishment() {
             const selectedPlayer = playerSelect.value;
             if (!selectedPlayer) {
                 alert('請選擇一位玩家！');
                 return;
             }
-            
-            // 如果玩家已在紀錄中，次數+1，否則設為1
             historyRecords[selectedPlayer] = (historyRecords[selectedPlayer] || 0) + 1;
             
             saveHistoryToLocalStorage();
@@ -417,7 +392,6 @@
             }
             
             if (storedHistory) {
-                // [新功能 2] 確保載入的是物件
                 historyRecords = JSON.parse(storedHistory) || {};
             }
         }
@@ -440,13 +414,12 @@
                 if (e.key === 'Enter') addPlayer();
             });
 
-            // [新功能 1] 綁定管理名單按鈕的點擊事件
             togglePlayersBtn.addEventListener('click', () => {
                 playerManagementArea.classList.toggle('hidden');
                 if (playerManagementArea.classList.contains('hidden')) {
                     togglePlayersBtn.textContent = '管理名單';
                 } else {
-                    togglePlayersBtn.textContent = '完成管理';
+                    togglePlayersBtn.textContent = '隱藏名單管理';
                 }
             });
         };
