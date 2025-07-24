@@ -3,165 +3,202 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>定時炸彈遊戲</title>
+    <title>定時炸彈遊戲 (升級版)</title>
     <style>
         /* --- 頁面整體樣式 --- */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f0f8ff; /* 愛麗絲藍 */
+            background-color: #f0f8ff;
             color: #333;
             text-align: center;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
+            padding: 1em;
         }
 
         /* --- 遊戲主容器 --- */
         .game-container {
             background-color: #ffffff;
-            padding: 2em 3em;
+            padding: 2em;
             border-radius: 15px;
             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
             width: 90%;
-            max-width: 500px;
+            max-width: 600px;
+            margin: 1em auto;
         }
 
-        h1 {
-            color: #d9534f; /* 危險紅色 */
-        }
+        h1 { color: #d9534f; }
+        h3, h4 { color: #5bc0de; }
 
         /* --- 計時器顯示 --- */
         #timer-display {
-            font-size: 6rem;
+            font-size: 5rem;
             font-weight: bold;
-            color: #4CAF50; /* 綠色 */
+            color: #4CAF50;
             margin: 0.2em 0;
             letter-spacing: 5px;
+            transition: color 0.5s;
         }
 
-        /* --- 遊戲設定區域 --- */
-        .setup-area, .result-area {
-            margin: 1.5em 0;
+        /* 1. 視覺效果：新增閃爍動畫 */
+        @keyframes blinking-text {
+            0% { opacity: 1; }
+            50% { opacity: 0.3; }
+            100% { opacity: 1; }
+        }
+        .blinking-text {
+            color: #d9534f !important; /* 強制使用紅色 */
+            animation: blinking-text 1s infinite;
         }
 
-        .setup-area label {
-            font-size: 1.1em;
-            margin-right: 10px;
-        }
-
-        input[type="number"], select {
-            padding: 8px;
+        /* --- 按鈕和輸入框樣式 --- */
+        input[type="number"], input[type="text"], select, button {
+            padding: 10px;
             font-size: 1em;
             border: 2px solid #ccc;
-            border-radius: 5px;
+            border-radius: 8px;
+            margin: 5px;
+            vertical-align: middle;
         }
-
-        /* --- 按鈕樣式 --- */
         button {
-            background-color: #5bc0de; /* 資訊藍色 */
+            background-color: #5bc0de;
             color: white;
             border: none;
-            padding: 12px 25px;
-            font-size: 1.2em;
-            border-radius: 8px;
             cursor: pointer;
             transition: background-color 0.3s, transform 0.2s;
-            margin: 5px;
         }
-
         button:hover {
             background-color: #31b0d5;
             transform: scale(1.05);
         }
-
-        #start-btn {
-            background-color: #4CAF50; /* 綠色 */
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+            transform: none;
         }
-        #start-btn:hover {
-            background-color: #45a049;
-        }
+        #start-btn { background-color: #4CAF50; }
+        #start-btn:hover:enabled { background-color: #45a049; }
 
-        /* --- 遊戲狀態訊息 --- */
+        /* --- 區域劃分 --- */
+        .area-section {
+            margin: 1.5em 0;
+            padding: 1em;
+            border-top: 1px solid #eee;
+        }
+        .hidden { display: none; }
+
+        /* --- 狀態訊息 --- */
         #status-message {
             font-size: 2em;
             font-weight: bold;
             color: #d9534f;
-            height: 50px; /* 預留空間防止畫面跳動 */
+            min-height: 50px;
         }
 
-        /* --- 紀錄列表 --- */
-        #history-list {
+        /* 2. 自訂玩家名單樣式 */
+        #player-list {
             list-style-type: none;
             padding: 0;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        #player-list li {
+            background-color: #f9f9f9;
+            padding: 8px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .remove-player-btn {
+            background-color: #d9534f;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 25px;
+            padding: 0;
+        }
+        
+        /* 3. 歷史紀錄列表樣式 */
+        #history-list {
+            list-style-type: decimal; /* 使用數字編號 */
+            padding-left: 30px;
             text-align: left;
             max-width: 300px;
             margin: 1em auto;
-            background-color: #f9f9f9;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            padding: 10px;
         }
 
-        #history-list li {
-            padding: 5px 10px;
-            border-bottom: 1px solid #eee;
-            font-size: 1.1em;
+        /* 4. 結束後顯示的內容樣式 */
+        #punishment-area {
+            background-color: #fffbe6;
+            border: 2px solid #f0ad4e;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+            text-align: left;
+            line-height: 1.8;
         }
-        #history-list li:last-child {
-            border-bottom: none;
+        #punishment-area .player-name {
+            font-weight: bold;
+            font-size: 1.5em;
+            color: #d9534f;
+            display: block;
+            text-align: center;
+            margin-bottom: 10px;
         }
-        
-        /* --- 用於隱藏元素的 CSS Class --- */
-        .hidden {
-            display: none;
-        }
+
     </style>
 </head>
 <body>
 
-    <!-- 遊戲主容器 -->
     <div class="game-container">
-        <h1>💣 定時炸彈 💣</h1>
+        <h1>💣 定時炸彈 (升級版) 💣</h1>
         
-        <!-- 計時器顯示 -->
         <div id="timer-display">01:00</div>
-        
-        <!-- 狀態訊息 -->
         <div id="status-message"></div>
 
-        <!-- 遊戲設定區域 -->
-        <div id="setup-area">
+        <div id="setup-area" class="area-section">
             <label for="time-input">遊戲時間 (秒):</label>
             <input type="number" id="time-input" value="60" min="5">
             <button id="start-btn">開始遊戲</button>
         </div>
         
-        <!-- 遊戲結束後輸入姓名的區域 -->
-        <div id="result-area" class="hidden">
+        <div id="result-area" class="area-section hidden">
             <h3>是誰拿到了炸彈？</h3>
             <select id="player-select"></select>
             <button id="submit-name-btn">記錄姓名</button>
         </div>
 
-        <!-- 再玩一輪的按鈕 -->
+        <div id="punishment-area" class="area-section hidden">
+             <!-- 內容將由 JS 動態填入 -->
+        </div>
+
         <div id="play-again-area" class="hidden">
              <button id="play-again-btn">再玩一輪！</button>
         </div>
         
-        <!-- 紀錄列表 -->
-        <div id="history-area">
-            <h4>📜 被炸到的名單：</h4>
-            <ul id="history-list">
-                <!-- 姓名將會動態加入到這裡 -->
-            </ul>
+        <!-- 2. 自訂玩家名單 -->
+        <div id="player-management-area" class="area-section">
+            <h4>🎮 玩家管理</h4>
+            <div>
+                <input type="text" id="new-player-input" placeholder="輸入新玩家姓名">
+                <button id="add-player-btn">新增玩家</button>
+            </div>
+            <ul id="player-list"></ul>
+        </div>
+
+        <!-- 3. 儲存紀錄 -->
+        <div id="history-area" class="area-section">
+            <h4>📜 被炸到的名單</h4>
+            <ul id="history-list"></ul>
         </div>
     </div>
 
-    <!-- JavaScript 程式邏輯 -->
     <script>
-        // --- 1. 取得所有需要的網頁元素 ---
+        // --- 元素抓取 ---
         const timerDisplay = document.getElementById('timer-display');
         const statusMessage = document.getElementById('status-message');
         const timeInput = document.getElementById('time-input');
@@ -169,112 +206,130 @@
         const playerSelect = document.getElementById('player-select');
         const submitNameBtn = document.getElementById('submit-name-btn');
         const playAgainBtn = document.getElementById('play-again-btn');
-
+        const newPlayerInput = document.getElementById('new-player-input');
+        const addPlayerBtn = document.getElementById('add-player-btn');
+        const playerList = document.getElementById('player-list');
+        const historyList = document.getElementById('history-list');
         const setupArea = document.getElementById('setup-area');
         const resultArea = document.getElementById('result-area');
         const playAgainArea = document.getElementById('play-again-area');
-        const historyList = document.getElementById('history-list');
+        const punishmentArea = document.getElementById('punishment-area');
 
-        // --- 2. 遊戲會用到的變數 ---
-        let timer; // 用來存放 setInterval 的 ID
+        // --- 遊戲變數 ---
+        let timer;
         let timeLeft = 0;
-        const playerNames = ['允恩', '允薆', '坤翰', '筠縢', '心恩', '芊妤'];
-        
-        // 建立音效物件 (使用網路上的免費音效來源)
-        // 注意：如果這些連結失效，音效會無法播放
+        let playerNames = [];
+        let historyRecords = [];
         const tickSound = new Audio('https://www.soundjay.com/clock/sounds/clock-ticking-1.mp3');
-        tickSound.loop = true; // 讓滴答聲重複播放
+        tickSound.loop = true;
         const explosionSound = new Audio('https://www.soundjay.com/mechanical/sounds/explosion-01.mp3');
 
-        // --- 3. 遊戲核心功能函式 ---
+        // --- 功能函式 ---
 
-        // 格式化時間，將秒數轉換為 MM:SS 格式
         function formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
             const remainingSeconds = seconds % 60;
             return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
         }
 
-        // 開始遊戲函式
         function startGame() {
-            // 隱藏設定區和按鈕，避免重複點擊
             setupArea.classList.add('hidden');
             playAgainArea.classList.add('hidden');
             resultArea.classList.add('hidden');
+            punishmentArea.classList.add('hidden');
             statusMessage.textContent = '';
             
-            // 從輸入框取得時間
-            timeLeft = parseInt(timeInput.value, 10);
-            if (isNaN(timeLeft) || timeLeft <= 0) {
-                timeLeft = 60; // 如果輸入無效，則使用預設值
-            }
+            timeLeft = parseInt(timeInput.value, 10) || 60;
             
-            // 更新畫面上的計時器
+            // 重置計時器樣式
+            timerDisplay.classList.remove('blinking-text');
             timerDisplay.textContent = formatTime(timeLeft);
-            timerDisplay.style.color = '#4CAF50'; // 恢復正常綠色
-
-            // 開始播放計時聲
+            
             tickSound.play();
 
-            // 設定每秒執行一次的倒數計時器
             timer = setInterval(() => {
                 timeLeft--;
                 timerDisplay.textContent = formatTime(timeLeft);
 
-                // 如果時間到了
+                // 1. 視覺效果：最後10秒閃爍
+                if (timeLeft <= 10) {
+                    timerDisplay.classList.add('blinking-text');
+                }
+
                 if (timeLeft <= 0) {
                     endGame();
                 }
             }, 1000);
         }
         
-        // 遊戲結束函式
         function endGame() {
-            clearInterval(timer); // 停止倒數計時器
-            tickSound.pause(); // 停止計時聲
-            tickSound.currentTime = 0; // 將音檔重置到開頭
+            clearInterval(timer);
+            tickSound.pause();
+            tickSound.currentTime = 0;
+            explosionSound.play();
             
-            explosionSound.play(); // 播放爆炸聲
-            
-            // 顯示爆炸訊息
             statusMessage.textContent = '💥 轟隆！爆炸了！ 💥';
-            timerDisplay.style.color = '#d9534f'; // 將計時器變為紅色
-            
-            // 顯示輸入姓名的區域
             resultArea.classList.remove('hidden');
         }
 
-        // 記錄姓名函式
-        function recordName() {
-            const selectedPlayer = playerSelect.value;
-            
-            // 建立一個新的列表項目
-            const listItem = document.createElement('li');
-            listItem.textContent = selectedPlayer;
-            
-            // 加入到紀錄列表中
-            historyList.appendChild(listItem);
-            
-            // 隱藏姓名輸入區，顯示"再玩一輪"按鈕
-            resultArea.classList.add('hidden');
-            playAgainArea.classList.remove('hidden');
+        // 4. 顯示懲罰內容
+        function showPunishment(playerName) {
+            punishmentArea.innerHTML = `
+                <span class="player-name">${playerName}，請唸出來：</span>
+                <p><strong>三字訣：</strong>順從神、服從人。</p>
+                <p><strong>七字訣：</strong>信而順從神喜愛、服從權柄不頂撞。</p>
+                <p><strong>讀聖經節：</strong>「又要讓基督的平安在你們心裡作仲裁」歌羅西書3:15上</p>
+            `;
+            punishmentArea.classList.remove('hidden');
         }
 
-        // 重設遊戲以進行下一輪
         function resetGame() {
             statusMessage.textContent = '';
-            timeLeft = parseInt(timeInput.value, 10);
+            timeLeft = parseInt(timeInput.value, 10) || 60;
             timerDisplay.textContent = formatTime(timeLeft);
-            timerDisplay.style.color = '#4CAF50';
+            timerDisplay.classList.remove('blinking-text');
 
             playAgainArea.classList.add('hidden');
-            setupArea.classList.remove('hidden'); // 顯示設定區，可以重新設定時間或直接開始
+            punishmentArea.classList.add('hidden');
+            setupArea.classList.remove('hidden');
         }
 
-        // --- 4. 初始化設定 ---
-        
-        // 動態產生下拉選單的選項
+        // --- 2. 玩家管理函式 ---
+        function renderPlayerList() {
+            playerList.innerHTML = '';
+            playerNames.forEach((name, index) => {
+                const li = document.createElement('li');
+                li.textContent = name;
+                const removeBtn = document.createElement('button');
+                removeBtn.textContent = 'X';
+                removeBtn.className = 'remove-player-btn';
+                removeBtn.onclick = () => removePlayer(index);
+                li.appendChild(removeBtn);
+                playerList.appendChild(li);
+            });
+            populatePlayerSelect();
+            savePlayersToLocalStorage();
+            updateStartButtonState();
+        }
+
+        function addPlayer() {
+            const newName = newPlayerInput.value.trim();
+            if (newName && !playerNames.includes(newName)) {
+                playerNames.push(newName);
+                newPlayerInput.value = '';
+                renderPlayerList();
+            } else if (playerNames.includes(newName)) {
+                alert('這個名字已經存在了！');
+            }
+        }
+
+        function removePlayer(index) {
+            playerNames.splice(index, 1);
+            renderPlayerList();
+        }
+
         function populatePlayerSelect() {
+            playerSelect.innerHTML = '';
             playerNames.forEach(name => {
                 const option = document.createElement('option');
                 option.value = name;
@@ -283,16 +338,86 @@
             });
         }
         
-        // 頁面載入時，設定好玩家名稱並顯示預設時間
+        function updateStartButtonState() {
+            startBtn.disabled = playerNames.length === 0;
+            if (startBtn.disabled) {
+                statusMessage.textContent = '請先新增玩家才能開始遊戲！';
+            } else {
+                 if (statusMessage.textContent === '請先新增玩家才能開始遊戲！') {
+                    statusMessage.textContent = '';
+                 }
+            }
+        }
+
+        // --- 3. 歷史紀錄與 LocalStorage ---
+        function renderHistoryList() {
+            historyList.innerHTML = '';
+            historyRecords.forEach(record => {
+                const li = document.createElement('li');
+                li.textContent = record;
+                historyList.appendChild(li);
+            });
+        }
+
+        function recordNameAndShowPunishment() {
+            const selectedPlayer = playerSelect.value;
+            if (!selectedPlayer) {
+                alert('請選擇一位玩家！');
+                return;
+            }
+            
+            historyRecords.push(selectedPlayer);
+            saveHistoryToLocalStorage();
+            renderHistoryList();
+            
+            resultArea.classList.add('hidden');
+            showPunishment(selectedPlayer); // 顯示懲罰內容
+            playAgainArea.classList.remove('hidden');
+        }
+
+        function savePlayersToLocalStorage() {
+            localStorage.setItem('bombGamePlayers', JSON.stringify(playerNames));
+        }
+
+        function saveHistoryToLocalStorage() {
+            localStorage.setItem('bombGameHistory', JSON.stringify(historyRecords));
+        }
+
+        function loadFromLocalStorage() {
+            const storedPlayers = localStorage.getItem('bombGamePlayers');
+            const storedHistory = localStorage.getItem('bombGameHistory');
+            
+            if (storedPlayers) {
+                playerNames = JSON.parse(storedPlayers);
+            } else {
+                // 如果是第一次玩，給一些預設名字
+                playerNames = ['允恩', '允薆', '坤翰', '筠縢', '心恩', '芊妤'];
+            }
+            
+            if (storedHistory) {
+                historyRecords = JSON.parse(storedHistory);
+            }
+        }
+
+        // --- 頁面初始化 ---
         window.onload = () => {
-            populatePlayerSelect();
+            loadFromLocalStorage();
+            renderPlayerList();
+            renderHistoryList();
+            
             const initialTime = parseInt(timeInput.value, 10);
             timerDisplay.textContent = formatTime(initialTime);
 
-            // --- 5. 綁定按鈕事件 ---
+            // --- 事件綁定 ---
             startBtn.addEventListener('click', startGame);
-            submitNameBtn.addEventListener('click', recordName);
+            submitNameBtn.addEventListener('click', recordNameAndShowPunishment);
             playAgainBtn.addEventListener('click', resetGame);
+            addPlayerBtn.addEventListener('click', addPlayer);
+            newPlayerInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    addPlayer();
+                }
+            });
         };
     </script>
 </body>
