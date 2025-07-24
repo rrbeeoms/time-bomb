@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>定時炸彈遊戲</title>
+    <style>
+        /* --- 頁面整體樣式 --- */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f8ff; /* 愛麗絲藍 */
+            color: #333;
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        /* --- 遊戲主容器 --- */
+        .game-container {
+            background-color: #ffffff;
+            padding: 2em 3em;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
+        }
+
+        h1 {
+            color: #d9534f; /* 危險紅色 */
+        }
+
+        /* --- 計時器顯示 --- */
+        #timer-display {
+            font-size: 6rem;
+            font-weight: bold;
+            color: #4CAF50; /* 綠色 */
+            margin: 0.2em 0;
+            letter-spacing: 5px;
+        }
+
+        /* --- 遊戲設定區域 --- */
+        .setup-area, .result-area {
+            margin: 1.5em 0;
+        }
+
+        .setup-area label {
+            font-size: 1.1em;
+            margin-right: 10px;
+        }
+
+        input[type="number"], select {
+            padding: 8px;
+            font-size: 1em;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+        }
+
+        /* --- 按鈕樣式 --- */
+        button {
+            background-color: #5bc0de; /* 資訊藍色 */
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.2em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s;
+            margin: 5px;
+        }
+
+        button:hover {
+            background-color: #31b0d5;
+            transform: scale(1.05);
+        }
+
+        #start-btn {
+            background-color: #4CAF50; /* 綠色 */
+        }
+        #start-btn:hover {
+            background-color: #45a049;
+        }
+
+        /* --- 遊戲狀態訊息 --- */
+        #status-message {
+            font-size: 2em;
+            font-weight: bold;
+            color: #d9534f;
+            height: 50px; /* 預留空間防止畫面跳動 */
+        }
+
+        /* --- 紀錄列表 --- */
+        #history-list {
+            list-style-type: none;
+            padding: 0;
+            text-align: left;
+            max-width: 300px;
+            margin: 1em auto;
+            background-color: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+        }
+
+        #history-list li {
+            padding: 5px 10px;
+            border-bottom: 1px solid #eee;
+            font-size: 1.1em;
+        }
+        #history-list li:last-child {
+            border-bottom: none;
+        }
+        
+        /* --- 用於隱藏元素的 CSS Class --- */
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 遊戲主容器 -->
+    <div class="game-container">
+        <h1>💣 定時炸彈 💣</h1>
+        
+        <!-- 計時器顯示 -->
+        <div id="timer-display">01:00</div>
+        
+        <!-- 狀態訊息 -->
+        <div id="status-message"></div>
+
+        <!-- 遊戲設定區域 -->
+        <div id="setup-area">
+            <label for="time-input">遊戲時間 (秒):</label>
+            <input type="number" id="time-input" value="60" min="5">
+            <button id="start-btn">開始遊戲</button>
+        </div>
+        
+        <!-- 遊戲結束後輸入姓名的區域 -->
+        <div id="result-area" class="hidden">
+            <h3>是誰拿到了炸彈？</h3>
+            <select id="player-select"></select>
+            <button id="submit-name-btn">記錄姓名</button>
+        </div>
+
+        <!-- 再玩一輪的按鈕 -->
+        <div id="play-again-area" class="hidden">
+             <button id="play-again-btn">再玩一輪！</button>
+        </div>
+        
+        <!-- 紀錄列表 -->
+        <div id="history-area">
+            <h4>📜 被炸到的名單：</h4>
+            <ul id="history-list">
+                <!-- 姓名將會動態加入到這裡 -->
+            </ul>
+        </div>
+    </div>
+
+    <!-- JavaScript 程式邏輯 -->
+    <script>
+        // --- 1. 取得所有需要的網頁元素 ---
+        const timerDisplay = document.getElementById('timer-display');
+        const statusMessage = document.getElementById('status-message');
+        const timeInput = document.getElementById('time-input');
+        const startBtn = document.getElementById('start-btn');
+        const playerSelect = document.getElementById('player-select');
+        const submitNameBtn = document.getElementById('submit-name-btn');
+        const playAgainBtn = document.getElementById('play-again-btn');
+
+        const setupArea = document.getElementById('setup-area');
+        const resultArea = document.getElementById('result-area');
+        const playAgainArea = document.getElementById('play-again-area');
+        const historyList = document.getElementById('history-list');
+
+        // --- 2. 遊戲會用到的變數 ---
+        let timer; // 用來存放 setInterval 的 ID
+        let timeLeft = 0;
+        const playerNames = ['允恩', '允薆', '坤翰', '筠縢', '心恩', '芊妤'];
+        
+        // 建立音效物件 (使用網路上的免費音效來源)
+        // 注意：如果這些連結失效，音效會無法播放
+        const tickSound = new Audio('https://www.soundjay.com/clock/sounds/clock-ticking-1.mp3');
+        tickSound.loop = true; // 讓滴答聲重複播放
+        const explosionSound = new Audio('https://www.soundjay.com/mechanical/sounds/explosion-01.mp3');
+
+        // --- 3. 遊戲核心功能函式 ---
+
+        // 格式化時間，將秒數轉換為 MM:SS 格式
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
+        }
+
+        // 開始遊戲函式
+        function startGame() {
+            // 隱藏設定區和按鈕，避免重複點擊
+            setupArea.classList.add('hidden');
+            playAgainArea.classList.add('hidden');
+            resultArea.classList.add('hidden');
+            statusMessage.textContent = '';
+            
+            // 從輸入框取得時間
+            timeLeft = parseInt(timeInput.value, 10);
+            if (isNaN(timeLeft) || timeLeft <= 0) {
+                timeLeft = 60; // 如果輸入無效，則使用預設值
+            }
+            
+            // 更新畫面上的計時器
+            timerDisplay.textContent = formatTime(timeLeft);
+            timerDisplay.style.color = '#4CAF50'; // 恢復正常綠色
+
+            // 開始播放計時聲
+            tickSound.play();
+
+            // 設定每秒執行一次的倒數計時器
+            timer = setInterval(() => {
+                timeLeft--;
+                timerDisplay.textContent = formatTime(timeLeft);
+
+                // 如果時間到了
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+        
+        // 遊戲結束函式
+        function endGame() {
+            clearInterval(timer); // 停止倒數計時器
+            tickSound.pause(); // 停止計時聲
+            tickSound.currentTime = 0; // 將音檔重置到開頭
+            
+            explosionSound.play(); // 播放爆炸聲
+            
+            // 顯示爆炸訊息
+            statusMessage.textContent = '💥 轟隆！爆炸了！ 💥';
+            timerDisplay.style.color = '#d9534f'; // 將計時器變為紅色
+            
+            // 顯示輸入姓名的區域
+            resultArea.classList.remove('hidden');
+        }
+
+        // 記錄姓名函式
+        function recordName() {
+            const selectedPlayer = playerSelect.value;
+            
+            // 建立一個新的列表項目
+            const listItem = document.createElement('li');
+            listItem.textContent = selectedPlayer;
+            
+            // 加入到紀錄列表中
+            historyList.appendChild(listItem);
+            
+            // 隱藏姓名輸入區，顯示"再玩一輪"按鈕
+            resultArea.classList.add('hidden');
+            playAgainArea.classList.remove('hidden');
+        }
+
+        // 重設遊戲以進行下一輪
+        function resetGame() {
+            statusMessage.textContent = '';
+            timeLeft = parseInt(timeInput.value, 10);
+            timerDisplay.textContent = formatTime(timeLeft);
+            timerDisplay.style.color = '#4CAF50';
+
+            playAgainArea.classList.add('hidden');
+            setupArea.classList.remove('hidden'); // 顯示設定區，可以重新設定時間或直接開始
+        }
+
+        // --- 4. 初始化設定 ---
+        
+        // 動態產生下拉選單的選項
+        function populatePlayerSelect() {
+            playerNames.forEach(name => {
+                const option = document.createElement('option');
+                option.value = name;
+                option.textContent = name;
+                playerSelect.appendChild(option);
+            });
+        }
+        
+        // 頁面載入時，設定好玩家名稱並顯示預設時間
+        window.onload = () => {
+            populatePlayerSelect();
+            const initialTime = parseInt(timeInput.value, 10);
+            timerDisplay.textContent = formatTime(initialTime);
+
+            // --- 5. 綁定按鈕事件 ---
+            startBtn.addEventListener('click', startGame);
+            submitNameBtn.addEventListener('click', recordName);
+            playAgainBtn.addEventListener('click', resetGame);
+        };
+    </script>
+</body>
+</html>
